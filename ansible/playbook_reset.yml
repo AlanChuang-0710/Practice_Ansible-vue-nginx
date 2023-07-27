@@ -1,0 +1,91 @@
+---
+- name: Reset to original
+  hosts: server
+  tasks:
+    # task
+    - name: Remove Node.js
+      apt:
+        name: nodejs
+        state: absent
+      ignore_errors: yes
+
+    # task
+    - name: Remove curl
+      apt:
+        name: curl
+        state: absent
+      ignore_errors: true
+
+    #task
+    - name: Stop nginx
+      service:
+        name: nginx
+        state: stopped
+      tags: "remove-nginx"
+
+    #task
+    - name: Remove nginx
+      shell: yes | sudo apt-get remove --purge nginx*
+      ignore_errors: true
+      tags: "remove-nginx"
+
+    # # task
+    # - name: Remove nginx
+    #   apt:
+    #     name: nginx*
+    #     state: absent
+    #   tags: "remove-nginx" 
+    
+    # # task
+    # - name: Find Nginx related files
+    #   find: 
+    #     paths: /
+    #     patterns: 'nginx'
+    #     use_regex: true
+    #   register: nginx_files
+    #   tags: "remove-nginx" 
+    
+    # - name: Delete Nginx related files
+    #   file: 
+    #     path: "{{item.path}}"
+    #     state: absent
+    #   with_items: "{{nginx_files.files}}"
+    #   tags: "remove-nginx" 
+    
+    # # task
+    # - name: Remove nginx-common
+    #   apt:
+    #     name: nginx-common
+    #     state: absent
+    #   tags: "remove-nginx" 
+    
+    # # task
+    # - name: Remove nginx-core
+    #   apt:
+    #     name: nginx-core
+    #     state: absent
+    #   tags: "remove-nginx" 
+
+    # # task
+    # - name: Remove nginx config directory
+    #   file:
+    #     path: /etc/nginx
+    #     state: absent
+    #   tags: "remove-nginx" 
+    
+    # task 
+    - name: Update apt cache
+      apt: 
+        update_cache: yes
+    
+    # task 
+    - name: Autoremove unused packages
+      apt:
+        autoclean: yes
+        autoremove: yes
+    
+    # task
+    - name: Remove project file
+      file:
+        path: /home/weiyu.chuang/PR_Project
+        state: absent

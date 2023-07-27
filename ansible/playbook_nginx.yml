@@ -1,0 +1,148 @@
+---
+- hosts: server
+  tasks:
+    # task
+    - name: Install curl
+      apt:
+        name: curl
+        state: present
+        update_cache: yes
+      tags: installNodeJS
+
+    # task
+    - name: Install Nodejs v16 PPA
+      shell: curl -sL https://deb.nodesource.com/setup_16.x | sudo bash -
+      args: 
+        executable: /bin/bash
+      tags: installNodeJS
+
+    # task
+    - name: Install Nodejs v16
+      apt:
+        name: nodejs
+        state: present
+        update_cache: yes
+        force_apt_get: yes
+        install_recommends: true
+      environment:
+        DEBIAN_FRONTEND: noninteractive
+      tags: installNodeJS
+
+    #task
+    - name: Check SSH key existance
+      stat: 
+        path: /home/weiyu.chuang/.ssh/.id_rsa.pub
+      register: ssh_keygen 
+      tags: createSSH
+    
+    #task
+    - name: Create .ssh directory
+      file:
+        path: /home/weiyu.chuang/.ssh
+        state: directory
+      when: not ssh_keygen.stat.exists
+      tags: createSSH
+    
+    #task
+    - name: Create SSH key if no existance
+      command: ssh-keygen -t rsa -b 4096 -N "" -f "/home/weiyu.chuang/.ssh/.id_rsa"
+      when: not ssh_keygen.stat.exists
+      tags: createSSH
+    
+    #task
+    - name: Get SSH key
+      shell: cat /home/weiyu.chuang/.ssh/.id_rsa.pub
+      register: public_key
+      tags: createSSH
+
+    #task
+    - name: Display public key
+      debug:
+        var: public_key.stdout
+      tags: createSSH
+    
+    # task
+    - name: Clone a git repo
+      git:
+        repo: git@github.com:AlanChuang-0710/Performance-Check.git
+        dest: /home/weiyu.chuang/PR_Project
+        clone: yes
+        accept_hostkey: yes
+        key_file: /home/weiyu.chuang/.ssh/.id_rsa
+      tags: gitClone
+
+    # task
+    - name: Ensure the target file existance
+      file:
+        path: /home/weiyu.chuang/PR_Project
+        state: directory
+        mode: "0755"
+      tags: gitClone
+    
+    #task
+    - name: Npm install
+      shell: npm install
+      args:
+        chdir: /home/weiyu.chuang/PR_Project
+      tags: npmInstall
+    
+    # task
+    - name: Npm run build
+      shell: npm run build
+      args: 
+        chdir: /home/weiyu.chuang/PR_Project
+      tags: npmBuild
+
+    # task
+    - name: Install Nginx
+      apt: 
+        name: nginx
+        state: present
+      ignore_errors: true
+      tags: nginx
+    
+    # task
+    - name: Replace Nginx default file
+      template: 
+        src: /home/alan/desktop/sites-enabled-template/default
+        dest: /etc/nginx/sites-enabled/default
+      notify: restart nginx
+      tags: nginx
+  
+  handlers:
+    - name: restart nginx
+      service: 
+        name: nginx
+        state: reloaded
+      tags: nginx
+
+    # # task
+    # - name: Revise Nginx Config html location
+    #   lineinfile: 
+    #     path: /etc/nginx/sites-available/default
+    #     regexp: '^\s*root\s+/var/www/html;'
+    #     line: ' root /home/weiyu.chuang/PR_Project/dist/spa;'
+    #   tags: nginx
+
+    # # task
+    # - name: Revise Nginx Config port 1
+    #   lineinfile: 
+    #     path: /etc/nginx/sites-available/default
+    #     regexp: '^\s*listen\s+80\s+default_server;'
+    #     line: ' listen 8080 default_server;'
+    #   tags: nginx
+      
+    # # task
+    # - name: Revise Nginx Config port 2
+    #   lineinfile: 
+    #     path: /etc/nginx/sites-available/default
+    #     regexp: '^\s*listen\s*\[::\]:80 default_server;'
+    #     line: ' listen [::]:8080 default_server;'
+    #   tags: nginx
+    
+    # #task
+    # - name:  Start Nginx
+    #   service: 
+    #     name: nginx
+    #     state: started
+    #   tags: [nginx, startNginx]
