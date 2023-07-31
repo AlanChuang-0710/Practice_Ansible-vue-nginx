@@ -21,6 +21,7 @@
       service:
         name: nginx
         state: stopped
+      ignore_errors: true
       tags: "remove-nginx"
 
     #task
